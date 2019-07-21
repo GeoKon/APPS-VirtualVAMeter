@@ -5,36 +5,18 @@
  * Copyright (c) George Kontopidis 2019, All Rights Reserved
  * ----------------------------------------------------------------------------------
  */
-    #include <gkeL1io.h>          // from GKE Lib1 (includes of usual base functions)
     #include <tcpClass.h>       // from GKE Lib1
-    #include <mgnClass.h>       // from GKE Lib1
-
-//    #include <filtClass.h>      // from GKE Lib1
-    #include "filtTemp.h"      // localy here
-
-    #include <Ticker.h>         // from Arduino library
-    
-    #include "mscSupport.h"     // in this local directory
-    #include "cliHandlers.h"    // in this local directory
+// #include <filtClass.h>       // from GKE Lib1
+    #include "filtTemp.h"       // localy here
+   
+    #include "mscSupport.h"     // in this local directory    
     #include "batTest.h"        // in this local directory
-    #include "globals.h"        // in this local directory
+    #include "Globals.h"        // includes also exports of <externIO.h> for cpu...eep
+    #include "cliHandlers.h"    // in this local directory
     
 // --------- allocation of classes used by this module or main() -------------------
     
     TCP tcp;                                    // used by this and main() 
-    MGN mgn;                                    // used only by this module
-    RinTEST rin;
-    
-// --------------- references to classes allocated elsewhere -------------------------
-
-    extern CPU cpu;         // allocated in global.cpp
-    extern CLI cli;         // allocated in global.cpp
-    extern EXE exe;         // allocated in global.cpp
-    extern GLOBALS myp;     // allocated in global.cpp
-    extern SCAN scan;       // allocated in mscSupport.cpp
-    extern ADS15 ads;       // allocated in mscSupport.cpp
-    
-    extern DIIR qvolts1, qvolts2, qamps;
 
 // ------------------------ IMPORTANT CLI MACROS -------------------------------------
 
@@ -292,19 +274,19 @@ namespace CLIADC									// all CLI functions
     void fetchEEParms( CLI_ARGS )
     {
         DECLARE( bp );
-        myp.fetchMyParms();
+        myp.fetchMyEEParms();
         RESPONSE("ok\r\n");
     }
     void saveEEParms( CLI_ARGS )
     {
         DECLARE( bp );
-        myp.saveMyParms();
+        myp.saveMyEEParms();
         RESPONSE("ok\r\n");
     }
     void initEEParms( CLI_ARGS )
     {
         DECLARE( bp );
-        myp.initMyParms( false );           // initialize but not save
+        myp.initMyEEParms();           // initialize but not save
         RESPONSE("ok\r\n");
     }
     // ---------------------------- SAMPLING PARAMETERS -----------------------------------

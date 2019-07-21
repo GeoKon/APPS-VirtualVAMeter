@@ -1,13 +1,12 @@
 #pragma once
 
-#include "gkeL1io.h"
 #include "mgnClass.h"
-#include "globals.h"
+#include "Globals.h"
 
-extern MGN mgn;
-extern GLOBALS myp;
 #define M_VOLTS myp.chn[2].engunits
 #define M_AMPS  myp.chn[4].engunits
+
+extern MGN mgn;
 
 class RinTEST
 {
@@ -140,3 +139,4 @@ public:
 	    state = nextstate;
 	}
 };
+extern RinTEST rin;

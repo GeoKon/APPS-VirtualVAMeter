@@ -7,7 +7,7 @@
  * Copyright (c) George Kontopidis 2019, All Rights Reserved
  * ----------------------------------------------------------------------------------
  */
-    #include <gkeL1io.h>              
+    #include <externIO.h>              
     #include "ads15Class.h"         // needed only for the SCALE
 
 // ----------------------- MAPPING OF ADC CHANNELS ----------------------------------
@@ -46,45 +46,10 @@ typedef enum
 
 // ----------------------------- ALL GLOBAL VARIABLES --------------------------------
 
-class GLOBALS
+class Globals
 {
-private:
-    EEP *eep;                   // pointer to the EEP class
-
-public:
-    scmask_t streamcode;        // 0=off, 1=cal adc, 2=cal volts
-
-    struct mee_t                // EEPROM PARAMETERS
-    {                           
-        int scanperiod;         // how often to compute ENG units (in 100ms increments)
-        
-        int smoothvolts;        // depth of the voltage filter in 100ms increments; e.g. 10 means average 10 samples
-        int smoothamps;         // depth of the amps filter in 100ms increments; e.g. 20 means average 20 samples
-                
-        int meterperiod;        // how often to update the meters (in 100ms increments).
-        int graphperiod;        // how often to update the meters (in 100ms increments)
-
-        float acsoffset;         // difference between ACS and ref channel
-
-        int vscale;              // Meter Scale Selection. Does not need to be in EEPROM!
-        int ascale;
-        
-    } mee;    
-    #define MEE_SIZE sizeof( mee_t )
-    
-    struct chn_t
-    {
-        fullscale_t fs;     // full scale/gain
-        int reading;        // raw A/D reading
-        float volts;        // converted volts (depends on fscale)
-
-        float scale;        // scale to convert to eng units
-        float offset;       // offset to convert to eng units
-        float engunits;     // engineering units
-
-    } chn[5];				// 0-3 correspond to chn0...chn3; 4 is the differential chn01
-	#define CHN_SIZE 5*sizeof( chn_t )
-    
+public:                                                 // ======= A1. Add here all volatile parameters 
+	scmask_t streamcode; 	// 0=off, 1=cal adc, 2=cal volts
     bool relayON;           // RELAY control
     bool relaySel;
     bool relayComp;
@@ -115,16 +80,72 @@ public:
     
     bool selectV1V2;        // 0=select V1, 1=select V2
     
-    byte *bpntr;            // pointer to free space
-    int bsize;              // set by constructor
-
-    void initMyParms( bool saveflag )                   // (2a) initialize parameters in memory
+	void initVolatile()                                 // ======= A2. Initialize here the volatile parameters
     {
-        for( int i=0; i<5; i++ )
-            defaultScale( i );
-
         streamcode = SCMASK_NONE;
+		
+		relayON = false;
+        relaySel = false;
+        relayComp = false;
+        relayVolt = 0.0;
+		
+		adpoint1 = desired1 = 0;         // CALIBRATION
+		adpoint2 = desired1 = 1.0;
+	
+		simulV1ON = simulV2ON = simulAON = false;
+        simulV1   = simulV2   = simulA   = 0.0;
+        simulV1adc= simulV2adc= simulAadc = 0;
+		
+		powerON = true;          		// POWER MEASUREMENTS
+        power = 0.0; 
+        energy = 0.0;
+        pduration = 0;
+        punits = true;
+		
+		oledON = true;
+        selectV1V2 = false;
+    }    
+    void printVolatile( char *prompt="", BUF *bp=NULL ) // ======= A3. Add to buffer (or print) all volatile parms
+    {
+        ;
+    }
+    struct mee_t                                        // ======= B1. Add here all non-volatile parameters into a structure
+    {                           
+        int scanperiod;         // how often to compute ENG units (in 100ms increments)
         
+        int smoothvolts;        // depth of the voltage filter in 100ms increments; e.g. 10 means average 10 samples
+        int smoothamps;         // depth of the amps filter in 100ms increments; e.g. 20 means average 20 samples
+                
+        int meterperiod;        // how often to update the meters (in 100ms increments).
+        int graphperiod;        // how often to update the meters (in 100ms increments)
+
+        float acsoffset;         // difference between ACS and ref channel
+
+        int vscale;              // Meter Scale Selection. Does not need to be in EEPROM!
+        int ascale;
+	} mee;    
+    #define MEE_PNTR ((byte *)&mee)
+	#define MEE_SIZE (sizeof( mee_t ))
+
+	struct chn_t
+    {
+        fullscale_t fs;     // full scale/gain
+        int reading;        // raw A/D reading
+        float volts;        // converted volts (depends on fscale)
+
+        float scale;        // scale to convert to eng units
+        float offset;       // offset to convert to eng units
+        float engunits;     // engineering units
+
+    } chn[5];				// 0-3 correspond to chn0...chn3; 4 is the differential chn01
+	
+	#define CHN_PNTR ((byte *)&chn[0])
+	#define CHN_SIZE (5*sizeof( chn_t ))
+	
+	// struct gp is actually MEE_SIZE + CHN_SIZE
+	
+	void initMyEEParms()                                // ======= B2. Initialize here the non-volatile parameters
+    {
         mee.scanperiod =1;      // every 100ms compute smoothed voltage and amps
         mee.smoothvolts=1;      // no voltage smoothing
         mee.smoothamps =1;      // no amps smoothing
@@ -132,60 +153,15 @@ public:
         mee.meterperiod=5;     // every 500ms (1sec) update the meters
         mee.graphperiod=10;    // every 1000ms (1sec) update the graph
         
-        mee.vscale = 1;         // 0-10V
+        mee.acsoffset = 0.006;
+		
+		mee.vscale = 1;         // 0-10V
         mee.ascale = 1;         // 0-5A
         
-        mee.acsoffset = 0.006;
-        
-        simulV1ON = simulV2ON = simulAON = false;
-        simulV1   = simulV2   = simulA   = 0.0;
-        simulV1adc= simulV2adc= simulAadc = 0;
-        
-        oledON = true;
-        selectV1V2 = false;
-
-        relayON = false;
-        relaySel = false;
-        relayComp = false;
-        relayVolt = 0.0;
-
-        powerON = true;          // POWER MEASUREMENTS
-        power = 0.0; 
-        energy = 0.0;
-        pduration = 0;
-        punits = true;
-    
-        if (saveflag) 
-            saveMyParms();                                  // and save the new values     
-    }
-    GLOBALS( EEP *ep )    
-    {
-        eep = ep;                                       // save pointer to the EPP class
-        initMyParms( false );                           // initialize parameters in memory
-        
-        bsize = MEE_SIZE + CHN_SIZE;                    // size of all parameters
-        bpntr = new byte [bsize];                       // allocate this in the heap
-    }
-    ~GLOBALS()
-    {
-        delete [] bpntr;
-    }    
-    void fetchMyParms()                                 // (2b) OR, fetch them from EEPROM
-    {
-         PF("Fetching %d mee_t and %d chn_t parms\r\n", sizeof( mee_t ), sizeof( chn_t ) );
-         eep->fetchUserStruct( bpntr, bsize );   // fetch them
-         memcpy( &mee, bpntr, MEE_SIZE );
-         memcpy( &chn, bpntr+MEE_SIZE, CHN_SIZE );
-    }        
-    void saveMyParms()                                  // (3) use after modifying myp.parameters
-    {
-        memcpy( bpntr, &mee, MEE_SIZE );               // copy mee_t
-        memcpy( bpntr+ MEE_SIZE, &chn, CHN_SIZE );
-        PF("Saving %d mee_t and %d chn_t parms\r\n", MEE_SIZE, CHN_SIZE );
-        
-        eep->saveUserStruct( bpntr, bsize );
-    }
-    void defaultScale( int i )
+        for( int i=0; i<5; i++ )
+            defaultScale( i );
+    } 
+	void defaultScale( int i )
     {
         // use switch to define defaults
         switch( i )
@@ -220,5 +196,54 @@ public:
         chn[i].reading  = 0; 
         chn[i].volts    = 0.0;
         chn[i].engunits = 0.0;
-    }                  
-};
+    }     	
+    void registerMyEEParms()                            // ======= B3. Register parameters by name
+    {   
+        ;
+    }
+    void printMyEEParms( char *prompt="", BUF *bp=NULL ) // ======= B4. Add to buffer (or print) all volatile parms
+    {
+		;
+    } 
+	// ----------------------------------------------------------------------------------------------------
+	// With the exception of /*1*? and /*2*/ the code is identical to Global.hpp
+	
+    byte *bpntr;                                        // pointer to User EEPROM structure
+    int bsize;                                          // byte count of the User EEPROM structure
+
+    void initAllParms( int myMagic  )                  // Initialialize volatile parms. Fetch eeprom parms. If bad, fix the EEPROM.
+    {
+/*1*/   bpntr = (byte *) (&mee);						// assumes that 'mee' is the base for both 'mee'+'chn[5]'
+/*2*/   bsize = MEE_SIZE + CHN_SIZE;					// sizeof( gp_t );
+        
+        initVolatile();                                 // initialize volatile parameters
+        registerMyEEParms();                            // always associate names with data structure
+        
+        if( !eep.checkEEParms( myMagic, bsize ) )       // fetches Header & WiFi & User parms (if any). Returns TRUE if OK
+        {
+            PF("=== Initializing parms!\r\n" );
+            eep.initHeadParms( myMagic, bsize );        // initialize header parameters AND save them in eeprom
+            eep.initWiFiParms();                        // initialize with default WiFi AND save them in eeprom
+            
+            initMyEEParms();                            // initialize user EEPROM parameters
+            saveMyEEParms();
+        }
+        PF("Fetching %d user parms\r\n", bsize ); 
+        eep.fetchUserStruct( bpntr, bsize );            // from EEPROM to working memory area   
+        eep.incrBootCount();                            // number of times system is booted
+        eep.printHeadParms("--- Current Head Parms");       // print current parms
+        eep.printWiFiParms("--- Current WiFi Parms");    
+        printMyEEParms    ( "--- User EEPROM Parms");
+    }
+    void fetchMyEEParms()
+    {
+        PF("Fetching %d-bytes of user parms\r\n", bsize ); 
+        eep.fetchUserStruct( bpntr, bsize );            // from EEPROM to working memory area     
+    }
+    void saveMyEEParms()
+    {
+        PF("Saving %d-bytes of user parms\r\n", bsize );
+        eep.saveUserStruct( bpntr, bsize );    
+    }
+};	
+extern Globals myp;

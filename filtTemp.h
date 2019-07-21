@@ -1,3 +1,4 @@
+#pragma once
 // Replacement of the filtClass.cpp, .harderr
 // I suspect that the LAB computer did not replicate
 

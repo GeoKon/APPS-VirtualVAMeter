@@ -31,32 +31,18 @@
  * Copyright (c) George Kontopidis 2019, All Rights Reserved
  * ----------------------------------------------------------------------------------
  */
-    #include <gkeL1io.h>        // from GKE Lib1 (includes of usual base functions)
-    #include <ads15Class.h>     // from GKE Lib1
-    #include <tcpClass.h>       // from GKE Lib1
+    #include <ticClass.h>       // from GKE Lib1
     #include <Ticker.h>         // from Arduino library
     
     #include "mscSupport.h"     // in this local directory
     #include "cliHandlers.h"    // in this local directory
-    #include "batTest.h"        // in this local directory
-    #include "globals.h"        // in this local directory
+    #include "Globals.h"        // includes also exports of <externIO.h> for cpu...eep
 
 // --------------- allocation of classes used only by this module -------------------
   
-    BUF buf(1500);              // defined in bufClass.h
-    PROF prf(20,30,50,75,90);   // defined in ticClass.h
-    Ticker tic;                 // defined in esp8266 library
-    
-// --------------- references to classes allocated elsewhere -------------------------
-    
-    extern EXE exe;             // defined in cliClass.h, allocated in global.cpp
-    extern CPU cpu;             // defined in cpuClass.h, allocated in global.cpp
-    extern CLI cli;             // defined in cliClass.h, allocated in global.cpp
-    extern GLOBALS myp;         // defined and allocated in global.cpp/.h
-    extern RinTEST rin;         // defined and allocated in batClass.cpp/.h
-    extern TCP tcp;             // defined in tcpClass.h, allocated in cliHandlers.cpp
-    extern SCAN scan;           // defined and allocated in mscSupport.cpp/.h
-    extern ADS15 ads;           // defined in ads15Class.h, allocated in mscSupport.cpp
+    static BUF buf(1500);              // defined in bufClass.h
+    static PROF prf(20,30,50,75,90);   // defined in ticClass.h
+    static Ticker tic;                 // defined in esp8266 library
     
 // ----------------------------- main setup() ----------------------------------------------
 
@@ -68,7 +54,7 @@ void setup(void)
     pinMode( 14, OUTPUT );
    
     initOLED();                                             // Initialze SSD1306 OLED dsp. In mscSupport.cpp
-    initEEParms();                                          // Initialize global parameters
+    myp.initAllParms( /*Magic Code*/0x4467 );               // Initialize global parameters. Fetch from EEPROM as appropriate
 
     ads.init( 0x48 );                                       // Initialize ADC. ADDR pin to GROUND
     for( int i=0; i<5; i++ )                                // Initialize ADS channels

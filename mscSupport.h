@@ -6,16 +6,9 @@
  * Copyright (c) George Kontopidis 2019, All Rights Reserved
  * ----------------------------------------------------------------------------------
  */
-// -------------- exported functions ---------------------
-
-    char *niceAmps( float x );
-    char *niceVolts( float x );
-    float round0( float x );
-    
-    void initOLED();
-    void updateOLED( int func );
-    
-    void initWiFi();
+    #include <oledClass.h>
+    #include <ads15Class.h>
+    #include "filtTemp.h" 
 
 // -------------------------------- SAMPLING ----------------------------------------
 class SCAN
@@ -38,3 +31,20 @@ public:
     // if mod=2 triggers every 2nd time iamready
     bool readyMod( int mod );
 };
+
+// ---------------------------- exported functions ----------------------------------
+
+    char *niceAmps( float x );
+    char *niceVolts( float x );
+    float round0( float x );
+    
+    void initOLED();
+    void updateOLED( int func );
+    
+    void initWiFi();
+// ---------------------------- exported classes ----------------------------------
+
+    extern OLED oled; 
+    extern ADS15 ads;  
+    extern DIIR qvolts1, qvolts2, qamps;   // decimal IIR filder
+    extern SCAN scan;

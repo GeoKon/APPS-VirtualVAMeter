@@ -5,13 +5,13 @@
  * Copyright (c) George Kontopidis 2019, All Rights Reserved
  * ----------------------------------------------------------------------------------
  */
-#include <gkeL1io.h>
 #include <oledClass.h>
-//    #include <filtClass.h>      // from GKE Lib1
-    #include "filtTemp.h"      // localy here
+#include <ads15Class.h>
+//#include <filtClass.h>            // from GKE Lib1
+#include "filtTemp.h"               // localy here
     
-#include "globals.h"
-#include "mscSupport.h"
+#include "Globals.h"                // includes also exports of <externIO.h> for cpu...eep
+#include "mscSupport.h"             // exported functions/tables of this module
 
 // ---------------------- allocation of classes -------------------------------------
     
@@ -20,11 +20,6 @@
     DIIR qvolts1, qvolts2, qamps;   // decimal IIR filder
     SCAN scan;
     
-// --------------- references to classes allocated elsewhere -------------------------
-    
-    extern EEP eep;             // defined in eepClass.h, allocated in global.cpp
-    extern GLOBALS myp;         // defined and allocated in global.cpp/.h
-
 // --------------------------------- OLED SUPPORT --------------------------------
 void updateOLED( int func )
 {
@@ -69,27 +64,6 @@ void initWiFi()
     }
     PR ("\r\nWiFi connected. IP=");
     PRN(WiFi.localIP());
-}
-
-// --------------------------------- EEPROM SUPPORT --------------------------------
-#define myMAGIC 0xBABE
-void initEEParms()
-{
-    //myp.registerMyParms();                              // register named parameters once for all
-    
-    if( !eep.checkEEParms( myMAGIC, myp.bsize ) )      // fetches parameters and returns TRUE or FALSE
-    {
-        PF("=== Initializing parms!\r\n" );
-        eep.initHeadParms( myMAGIC, myp.bsize );        // initialize header parameters AND save them in eeprom
-        eep.initWiFiParms();                            // initialize with default WiFi AND save them in eeprom
-        
-        myp.initMyParms( true );                        // initialize named parameters AND save them in EEPROM
-        PF("AFTER INITIALIZATION\r\n");
-    }
-    eep.incrBootCount();
-    myp.fetchMyParms();                                 // retrieve parameters from EEPROM
-    eep.printHeadParms("--- Current Head Parms");       // print current parms
-    eep.printWiFiParms("--- Current WiFi Parms");                 
 }
 
 // --------------------------------- MATH SUPPORT --------------------------------
